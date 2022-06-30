@@ -9,6 +9,8 @@ static int
 future_check_features(PyFutureFeatures *ff, stmt_ty s, PyObject *filename)
 {
     int i;
+    char *raw_informative_str = "This feature is already enabled by default.\n";
+    PyObject *informative_str = PyUnicode_FromString(raw_informative_str);
 
     assert(s->kind == ImportFrom_kind);
 
@@ -39,9 +41,10 @@ future_check_features(PyFutureFeatures *ff, stmt_ty s, PyObject *filename)
         } else if (strcmp(feature, FUTURE_ANNOTATIONS) == 0) {
             ff->ff_features |= CO_FUTURE_ANNOTATIONS;
         } else if (strcmp(feature, "braces") == 0) {
-            PyErr_SetString(PyExc_SyntaxError,
-                            "not a chance");
-            PyErr_SyntaxLocationObject(filename, s->lineno, s->col_offset + 1);
+            if (PyObject_Print(informative_str, stdout, 1) == -1) {
+                Py_DECREF(informative_str);
+                return 1;
+            }
             return 0;
         } else {
             PyErr_Format(PyExc_SyntaxError,
